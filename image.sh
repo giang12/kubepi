@@ -1,4 +1,6 @@
 #!/bin/bash -e
+IMG=raspbian_lite/images/raspbian_lite-2018-11-15/2018-11-13-raspbian-stretch-lite.zip
+LATEST_IMG=raspbian_lite_latest
 
 isWifi=0
 
@@ -18,7 +20,7 @@ if [ ! -f /tmp/raspbian/.setup ]; then
   echo "Fetching image"
   mkdir -p /tmp/raspbian
 
-  curl -L https://downloads.raspberrypi.org/raspbian_lite/images/raspbian_lite-2017-07-05/2017-07-05-raspbian-jessie-lite.zip > /tmp/raspbian/image.zip
+  curl -L https://downloads.raspberrypi.org/"$IMG" > /tmp/raspbian/image.zip
   unzip /tmp/raspbian/image.zip -d /tmp/raspbian
   touch /tmp/raspbian/.setup
 fi
