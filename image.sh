@@ -47,7 +47,7 @@ sudo mkdir -p /media/$USER/boot
 sudo mount /dev/${disk}p1 /media/$USER/boot
 
 sudo touch /media/$USER/boot/ssh
-orig="$(sudo head -n1 /media/$USER/boot/cmdline.txt) cgroup_enable=cpuset cgroup_memory=1"
+orig="$(sudo head -n1 /media/$USER/boot/cmdline.txt) cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory"
 echo $orig | sudo tee /media/$USER/boot/cmdline.txt
 
 sudo mkdir -p /media/$USER/rootfs
