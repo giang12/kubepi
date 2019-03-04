@@ -9,3 +9,7 @@
 	./prep.sh 2 kubepi-2 192.168.0.12
 	...etc
 	```
+3. Install
+	docker
+	kubeadm kubectl 
+	

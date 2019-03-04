@@ -1,0 +1,15 @@
+[dev]
+kubepileader    ansible_host=192.168.42.100
+kubepi001    	ansible_host=192.168.42.101
+kubepi002    	ansible_host=192.168.42.102
+kubepi003    	ansible_host=192.168.42.103
+kubepi004    	ansible_host=192.168.42.104
+kubepi-x    	ansible_host=192.168.42.105
+kubepi-y    	ansible_host=192.168.42.106
+
+
+[prod]
+
+
+[master]
+kubepileader
