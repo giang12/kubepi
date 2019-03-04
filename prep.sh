@@ -16,7 +16,7 @@ sleep 2
 ./rpc/_set_hostname.sh $USER $address $hostname
 
 sleep 2
-./rpc/_setup_static_ip.sh $USER $address "$subnet.$node_id"
+./rpc/_set_static_ip.sh $USER $address "$subnet.$node_id"
 
 sleep 2
 ./rpc/_reboot.sh $USER $address
