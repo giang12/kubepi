@@ -6,7 +6,7 @@ hostname=$3
 
 ssh $user@$address << EOF
 if [[ \$(sudo grep "$hostname" /etc/hostname) ]] ; then
-  echo "hostname already configured"
+  echo "Hostname already configured"
 else
   echo "Running apt-get update"
   sudo apt-get update
@@ -15,6 +15,6 @@ else
   echo "Setting hostname to $hostname"
   sudo hostname $hostname
   sudo sh -c 'echo $hostname > /etc/hostname'
-  sudo sh -c 'echo "127.0.1.1 $hostname" >> /etc/hostnames'
+  sudo sh -c 'echo "127.0.1.1 $hostname" >> /etc/hosts'
 fi
 EOF
