@@ -10,6 +10,10 @@
 	...etc
 	```
 3. Install
-	docker
-	kubeadm kubectl 
-	
+	```shell
+	./rpc/_install_docker.sh $USER 192.168.0.100
+	./rpc/_install_kube.sh $USER 192.168.0.100
+	```
+4. Set up containers networking, storage, and monitoring dashboards
+ ./login.sh $address
+ kubectl apply -f manifests/flannel.yml

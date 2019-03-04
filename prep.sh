@@ -21,8 +21,3 @@ sleep 2
 sleep 2
 ./rpc/_reboot.sh $USER $address
 
-# ./_network.sh $USER $address
-# ./_kube.sh $USER $address
-
-# ./login.sh $address
-# kubectl apply -f manifests/flannel.yml
