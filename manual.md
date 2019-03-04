@@ -1,4 +1,4 @@
-1. Flash vanilla Raspbian image to sd 
+1. Flash fresh vanilla Raspbian image to sd 
 	dont forget to `touch ssh` in /boot/ on the SD card
 
 2. ./prep.sh {id} {hostname} {address}
