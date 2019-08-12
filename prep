@@ -16,7 +16,7 @@ sleep 2
 
 
 sleep 2
-./rpc/_timedate.sh "$USER" "$address" "$subnet.$node_id"
+./rpc/_timedate.sh "$USER" "$address"
 
 sleep 2
 ./rpc/_set_hostname.sh "$USER" "$address" "$hostname"
