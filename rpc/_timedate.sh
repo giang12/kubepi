@@ -10,7 +10,4 @@ sudo timedatectl set-timezone UTC
 sudo apt install -y ntp
 sudo systemctl enable ntp
 sudo timedatectl set-ntp 1
-
-reboot
-
 EOF
