@@ -2,11 +2,10 @@
 mission			ansible_host=10.0.0.100
 excelsior		ansible_host=10.0.0.101
 clarion			ansible_host=10.0.0.102
-geary			ansible_host=10.0.0.103
-balmy			ansible_host=10.0.0.104
-valencia		ansible_host=10.0.0.105
-diviseraro		ansible_host=10.0.0.106
-
+balmy			ansible_host=10.0.0.103
+geary			ansible_host=10.0.0.104
+divisadero		ansible_host=10.0.0.105
+valencia		ansible_host=10.0.0.106
 
 [prod]
 
