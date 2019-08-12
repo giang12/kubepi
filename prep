@@ -1,0 +1,29 @@
+#!/bin/bash -e
+node_id=$1
+hostname=$2
+address=$3
+
+subnet=10.0.0
+start_ip=100
+node_id=`echo "$start_ip + $node_id" | bc`
+
+bootstrap_user="lucy"
+
+sleep 2
+./rpc/_setup_user.sh "$bootstrap_user" "$address" "pirate"  --del-init-user #raspberry
+sleep 2
+./rpc/_setup_user.sh "$USER" "$address" "$bootstrap_user"
+
+
+sleep 2
+./rpc/_timedate.sh "$USER" "$address" "$subnet.$node_id"
+
+sleep 2
+./rpc/_set_hostname.sh "$USER" "$address" "$hostname"
+
+sleep 2
+./rpc/_set_static_ip.sh "$USER" "$address" "$subnet.$node_id"
+
+sleep 2
+./rpc/_reboot.sh "$USER" "$address"
+

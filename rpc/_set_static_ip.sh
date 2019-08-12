@@ -1,11 +1,11 @@
 #!/bin/bash -e
 user=$1
 address=$2
-static_ip=${3:-192.168.42.100}
+static_ip=${3:-10.0.0.100}
 
-routers="192.168.42.1"
-domain_name_servers="192.168.42.1 8.8.8.8"
-
+routers="10.0.0.1"
+domain_name_servers="10.0.0.1 8.8.8.8"
+search_domains="lucy.local"
 
 ssh $user@$address << EOF
 echo "Setting static ip to $static_ip"
