@@ -9,21 +9,21 @@ node_id=`echo "$start_ip + $node_id" | bc`
 
 bootstrap_user="lucy"
 
-# sleep 5
+sleep 2
 ./rpc/_setup_user.sh "$bootstrap_user" "$address" "pirate"  --del-init-user #raspberry
 
-# sleep 5
+sleep 2
 ./rpc/_setup_user.sh "$USER" "$address" "$bootstrap_user"
 
-# sleep 5
+sleep 2
 ./rpc/_timedate.sh "$USER" "$address"
 
-# sleep 5
+sleep 2
 ./rpc/_set_hostname.sh "$USER" "$address" "$hostname"
 
-# sleep 5
+sleep 2
 ./rpc/_set_static_ip.sh "$USER" "$address" "$subnet.$node_id"
 
-# sleep 5
+sleep 2
 ./rpc/_reboot.sh "$USER" "$address"
 
