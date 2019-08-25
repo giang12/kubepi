@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# flashing the img
+HOSTNAME=$1
+STATIC_IP=$2
+
+VERSION="v1.11.1"
+
+# SSID="wifi-name"
+# PASS="wifi-pass"
+# Add these options if want wifi
+# --ssid "$SSID" \
+# --password "$PASS" \
+
+echo "Building #${HOSTNAME} (づ ￣ ³￣)づ ⓈⓂⓄⓄⓉⒽ"
+
+
+./flash \
+	--hostname "$HOSTNAME" \
+	--ip "$STATIC_IP" \
+	--script "boot/setup_user.sh" \
+	--bootconf boot/config.txt \
+	--userdata boot/user-data \
+	"https://github.com/hypriot/image-builder-rpi/releases/download/$VERSION/hypriotos-rpi-$VERSION.img.zip"
+
+echo "#${HOSTNAME} (╯°□°)–︻╦╤─ – – –ready to join master ${MASTER_ADD}!"
+
+

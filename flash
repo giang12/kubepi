@@ -1,8 +1,10 @@
+
 #!/usr/bin/env bash
 # Flash Raspberry Pi SD card images on your PC or Mac
 # Stefan Scherer - scherer_stefan@icloud.com
 #
 # Linux initial version by Matt Williams - matt@matthewkwilliams.com
+# script & docker cmd version by Zen - nggiang12@gmail.com
 # MIT License
 
 set -eo pipefail
@@ -11,12 +13,6 @@ error()
 {
   echo "$1"
   exit "$2"
-}
-
-version()
-{
-  echo "dirty"
-  exit 0
 }
 
 usage()
@@ -38,23 +34,13 @@ OPTIONS:
   --force|-f      Force flash without security prompt (for automation)
   --userdata|-u   Copy this cloud-init file to /boot/user-data
   --metadata|-m   Copy this cloud-init file to /boot/meta-data
+  --file|-F       Copy this file to /boot
+  --script|-S     Copy Custom script to /boot
+  --dockercmd|-D  Docker command to run on boot
 
 If no image is specified, the script will try to configure an existing
 image. This is useful to try several configuration without the need to
 rewrite the image every time.
-
-For HypriotOS < v1.7.0:
-
-The config file device-init.yaml should look like
-
-hostname: black-pearl
-wifi:
-  interfaces:
-    wlan0:
-      ssid: "MyNetwork"
-      password: "secret_password"
-
-For HypriotOS v1.7.0 and higher:
 
 The config file user-data config file is the cloud-init configuration.
 See http://cloudinit.readthedocs.io/en/0.7.9/ for more details.
@@ -68,7 +54,7 @@ do
   delim=""
   case "${arg}" in
     --help) args="${args}-h ";;
-    --version) args="${args}-v ";;
+    --verbose) args="${args}-v ";;
     --config) args="${args}-c ";;
     --hostname) args="${args}-n ";;
     --ssid) args="${args}-s ";;
@@ -79,6 +65,10 @@ do
     --force) args="${args}-f ";;
     --userdata) args="${args}-u ";;
     --metadata) args="${args}-m ";;
+    --file) args="${args}-F ";; 
+    --script) args="${args}-S ";;
+    --dockercmd) args="${args}-D ";;
+    --ip) args="${args}-i ";;
     # pass through anything else
     *) [[ "${arg:0:1}" == "-" ]] || delim="\""
       args="${args}${delim}${arg}${delim} ";;
@@ -87,10 +77,9 @@ done
 # reset the translated args
 eval set -- "$args"
 # now we can process with getopt
-while getopts ":h:vc:n:s:p:C:l:d:fu:m:" opt; do
+while getopts ":hc:n:s:p:C:l:d:fu:m:F:S:D:i:" opt; do
   case $opt in
     h)  usage ;;
-    v)  version ;;
     c)  CONFIG_FILE=$OPTARG ;;
     C)  BOOT_CONF=$OPTARG ;;
     n)  SD_HOSTNAME=$OPTARG ;;
@@ -98,9 +87,14 @@ while getopts ":h:vc:n:s:p:C:l:d:fu:m:" opt; do
     p)  WIFI_PASSWORD=$OPTARG ;;
     l)  CLUSTERLAB=$OPTARG ;;
     d)  DEVICE=$OPTARG ;;
-    f)  FORCE=1 ;;
+    f)  FORCE=$OPTARG ;;
     u)  USER_DATA=$OPTARG ;;
     m)  META_DATA=$OPTARG ;;
+    F)  FILE=$OPTARG ;;
+    S)  SCRIPT=$OPTARG ;;
+    D)  DOCKER_CMD=$OPTARG ;;
+    i)  STATIC_IP=$OPTARG ;;
+
     \?) usage ;;
     :)
       echo "option -$OPTARG requires an argument"
@@ -148,16 +142,16 @@ case "${OSTYPE}" in
       true
     }
 
-    validate_yaml() {
-      set +e
-      if _RET=$(ruby -e "require 'yaml';YAML.load_file('$1')" 2>&1); then
-        set -e
-        return 0
-      fi
-      echo "File $1 is not a valid YAML file!"
-      echo "$_RET" | grep -v "from "
-      set -e
-      false
+    validate_yaml() {   
+      set +e    
+      if _RET=$(ruby -e "require 'yaml';YAML.load_file('$1')" 2>&1); then   
+        set -e    
+        return 0    
+      fi    
+      echo "File $1 is not a valid YAML file!"    
+      echo "$_RET" | grep -v "from "    
+      set -e    
+      false   
     }
     # Try to identify the most likely device that the user will use to
     # write an image to.
@@ -327,10 +321,10 @@ case "${OSTYPE}" in
       fi
     }
 
-    validate_yaml() {
-      ## NO-OP in Linux
-      true
-    }
+    validate_yaml() {   
+      ## NO-OP in Linux   
+      true    
+    }   
 
     # Try to identify the most likely device that the user will use to
     # write an image to.
@@ -486,17 +480,24 @@ fi
 
 check_requirements
 
-if [ -n "${USER_DATA}" ]; then
+if [ -n "${USER_DATA}" ]; then  
   if [ ! -f "${USER_DATA}" ]; then
     echo "Cloud-init file ${USER_DATA} not found!"
     exit 10
   fi
-  validate_yaml "${USER_DATA}"
+  validate_yaml "${USER_DATA}"  
 fi
 
 if [ -n "${META_DATA}" ]; then
   if [ ! -f "${META_DATA}" ]; then
     echo "Cloud-init file ${META_DATA} not found!"
+    exit 10
+  fi
+fi
+    
+if [ -n "${FILE}" ]; then
+  if [ ! -f "${FILE}" ]; then
+    echo "File ${FILE} not found!"
     exit 10
   fi
 fi
@@ -568,54 +569,70 @@ if [[ -z $CONFIGURE_ONLY ]] ; then
   fi
 fi
 
-while true; do
-  disk="$DEVICE"
-  if [[ -z "${disk}" ]]; then
-    autodetect_device
-    disk="$_RET"
-
+auto=true
+selectDiskFlash(){
+  while true; do
+    # default to device passed by user
+    disk="$DEVICE"
     if [[ -z "${disk}" ]]; then
-      show_devices
-      # shellcheck disable=SC2162
-      read -p "Please pick your device: "
-      disk="${REPLY}"
-      [[ ${disk} != /dev/* ]] && disk="/dev/${disk}"
+      if "$auto"; then
+        # try to find the correct disk of the inserted SD card
+        autodetect_device
+        disk="$_RET"
+      else
+        # fallback to user input
+        show_devices
+        # shellcheck disable=SC2162
+        read -p "Please pick your device: "
+        disk="${REPLY}"
+        [[ ${disk} != /dev/* ]] && disk="/dev/${disk}"
+      fi
     fi
-  fi
-  if [[ -z "${FORCE}" ]]; then
-    while true; do
-      echo ""
-      read -rp "Is ${disk} correct? " yn
-      case $yn in
-        [Yy]* ) break;;
-        [Nn]* ) exit;;
-        * ) echo "Please answer yes or no.";;
-      esac
-    done
-  fi
+      #
 
-  prepare_raw_disk "${disk}"
-  disk=$_RET
+    # ask for confirmation 
+    if [[ -z "${FORCE}" ]]; then
+      show_devices
+      while true; do
+        echo ""
+        read -rp "Is ${disk} correct? " yn
+        case $yn in
+          [Yy]* ) break;;
+          [Nn]* ) 
+            auto=false
+            selectDiskFlash
+            ;;
+          * ) echo "Please answer yes or no.";;
+        esac
+      done
+    fi
 
-  check_device_is_writable "${disk}"
-  writable=$_RET
+    prepare_raw_disk "${disk}"
+    disk=$_RET
 
-  echo "Unmounting ${disk} ..."
-  umount_disk "${disk}"
+    check_device_is_writable "${disk}"
+    writable=$_RET
 
-  if [ "$writable" == "1" ]; then
-    break
-  else
-    play_warn
-    echo "The SD card is write protected. Please eject, remove protection and insert again."
-  fi
-done
+    echo "Unmounting ${disk} ..."
+    umount_disk "${disk}"
+
+    if [ "$writable" == "1" ]; then
+      break
+    else
+      play_warn
+      echo "👎  The SD card is write protected. Please eject, remove protection and insert again."
+      exit
+    fi
+  done
+}
+selectDiskFlash
 
 if [[ -z $CONFIGURE_ONLY ]] ; then
   get_raw_device_filename "$disk"
   rawdisk=$_RET
 
-  echo "Flashing ${image} to ${rawdisk} ..."
+  echo "Flashing ${image} to ${rawdisk} ...(may need to enter root password!)"
+
   if [[ -x $(command -v pv) ]]; then
     sudo_prompt
     size=$(/usr/bin/stat "$size_opt" "${image}")
@@ -636,6 +653,9 @@ boot="$_RET"
 echo "Mounting ${disk} to customize..."
 mount_boot_disk "${disk}" "${boot}"
 
+# customize for first boot
+
+ #legacy device-init
  if [ -f "${CONFIG_FILE}" ]; then
     if [[ "${CONFIG_FILE}" == *"occi"* ]]; then
       echo "Copying ${CONFIG_FILE} to ${boot}/occidentalis.txt ..."
@@ -644,23 +664,34 @@ mount_boot_disk "${disk}" "${boot}"
       echo "Copying ${CONFIG_FILE} to ${boot}/device-init.yaml ..."
       cp "${CONFIG_FILE}"  "${boot}/device-init.yaml"
     fi
-  fi
+fi
 
-  if [[ -f "${BOOT_CONF}" ]]; then
-    echo "Copying ${BOOT_CONF} to ${boot}/config.txt ..."
-    cp "${BOOT_CONF}" "${boot}/config.txt"
-  fi
+if [[ -f "${BOOT_CONF}" ]]; then
+  echo "Copying ${BOOT_CONF} to ${boot}/config.txt ..."
+  cp "${BOOT_CONF}" "${boot}/config.txt"
+fi
 
-  if [ -f "${USER_DATA}" ]; then
-    echo "Copying cloud-init ${USER_DATA} to ${boot}/user-data ..."
-    cp "${USER_DATA}" "${boot}/user-data"
-  fi
+if [ -f "${USER_DATA}" ]; then
+  echo "Copying cloud-init ${USER_DATA} to ${boot}/user-data ..."
+  cp "${USER_DATA}" "${boot}/user-data"
+fi
 
-  if [ -f "${META_DATA}" ]; then
-    echo "Copying cloud-init ${META_DATA} to ${boot}/meta-data ..."
-    cp "${META_DATA}" "${boot}/meta-data"
-  fi
+if [ -f "${META_DATA}" ]; then
+  echo "Copying cloud-init ${META_DATA} to ${boot}/meta-data ..."
+  cp "${META_DATA}" "${boot}/meta-data"
+fi
 
+if [ -f "${FILE}" ]; then   
+  echo "Copying file ${FILE} to ${boot}/ ..."   
+  cp "${FILE}" "${boot}/"   
+fi    
+ #custom SCRIPT
+if [ -f "${SCRIPT}" ]; then
+  echo "Copying ${SCRIPT} to ${boot}/bin/ ..."
+  mkdir "${boot}/bin"
+  cp "${SCRIPT}"  "${boot}/bin/"
+  chmod -R +x "${boot}/bin/"
+fi
 
 if [ -f "${boot}/device-init.yaml" ]; then
   echo "Setting device-init"
@@ -684,18 +715,41 @@ if [ -f "${boot}/device-init.yaml" ]; then
   fi
 fi
 
- # cloud-init
-  if [ -f "${boot}/user-data" ]; then
-    if [ -n "${SD_HOSTNAME}" ]; then
-      echo "Set hostname=${SD_HOSTNAME}"
-      sed_i -e "s/.*hostname:.*\$/hostname: ${SD_HOSTNAME}/" "${boot}/user-data"
-    fi
+# cloud-init
+if [ -f "${boot}/user-data" ]; then
 
-    if [ ! -f "${boot}/meta-data" ]; then
-      echo "Creating empty meta-data"
-      touch "${boot}/meta-data"
-    fi
+  if [ -n "${SD_HOSTNAME}" ]; then
+    echo "Set hostname=${SD_HOSTNAME}"
+    sed_i -e "s/.*hostname:.*\$/hostname: ${SD_HOSTNAME}/" "${boot}/user-data"
   fi
+
+  if [ -n "${STATIC_IP}" ]; then
+    echo "Set ip_address=${STATIC_IP}"
+    sed_i -e "s/ip_address=STATIC_IP_ADDR.*\$/ip_address=${STATIC_IP}\/24/" "${boot}/user-data"
+  else
+    echo "Missing IP addr, try --ip opt?"
+    exit 1
+  fi
+
+  if [ -n "${boot}/meta-data" ]; then
+    echo "Creating empty meta-data"
+    touch "${boot}/meta-data"
+  fi
+  if [ -n "${WIFI_SSID}" ]; then
+    echo "Set wlan0/ssid=${WIFI_SSID}"
+    /usr/bin/sed -i "" -e "s/ssid=.*\$/ssid=\"${WIFI_SSID}\"/" "${boot}/user-data"
+  fi
+  if [ -n "${WIFI_PASSWORD}" ]; then
+    echo "Set wlan0/psk=${WIFI_PASSWORD}"
+    /usr/bin/sed -i "" -e "s/psk=.*\$/psk=\"${WIFI_PASSWORD}\"/" "${boot}/user-data"
+  fi
+
+  if [ -n "${DOCKER_CMD}" ]; then
+    echo "Set DOCKER_SWARM_CMD=${DOCKER_CMD}"
+    /usr/bin/sed -i "" -e "s/.*DOCKER_SWARM_CMD_PLACE_HOLDER.*\$/  - '${DOCKER_CMD}'/" "${boot}/user-data"
+  fi
+fi
+  
 # legacy: /boot/occidentalis.txt of old Hector release
 if [ -f "${boot}/occidentalis.txt" ]; then
   echo "Setting Occidentalis"
@@ -713,7 +767,7 @@ if [ -f "${boot}/occidentalis.txt" ]; then
   fi
 fi
 
-echo "Unmounting ${disk} ..."
+echo "⏏ Unmounting ${disk} ..."
 sleep 1
 
 set +e
@@ -723,8 +777,8 @@ detach "${disk}"
 if [ $? -eq 0 ]; then
   cleanup "${boot}"
   play_ok
-  echo "Finished."
+  echo "🍺  Finished."
 else
   play_warn
-  echo "Something went wrong."
+  echo "👎  Something went wrong."
 fi
