@@ -32,7 +32,7 @@ chown -R $user /home/$user
 wget https://github.com/$GITHUB_USER.keys -O /home/$user/.ssh/authorized_keys
 chown $user:$user /home/$user/.ssh/authorized_keys
 
-echo "*/10 * * * * /usr/bin/wget https://github.com/$GITHUB_USER.keys -O ~/.ssh/authorized_keys" >> /tmp/cronjobs
+echo "0 0 * * * /usr/bin/wget https://github.com/$GITHUB_USER.keys -O ~/.ssh/authorized_keys" >> /tmp/cronjobs
 crontab -u $user /tmp/cronjobs
 
 echo "$user ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/010_$user-nopasswd"
@@ -41,4 +41,5 @@ if  [ "$DEL_INIT_USER" == "1" ]; then
   
   echo "Deleting user $init_user"
   userdel -f $init_user
+  rm -rf "/home/$init_user"
 fi

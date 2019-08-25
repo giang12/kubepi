@@ -60,7 +60,7 @@ write_files:
       static ip_address=STATIC_IP_ADDR/24
       # static ip6_address=fd51:42f8:caae:d92e::ff/64
       static routers=192.168.11.1
-      static domain_name_servers=192.168.11.1 8.8.8.8
+      static domain_name_servers=192.168.11.11 192.168.11.100
 
     path: /etc/dhcpcd.conf
   - content: |
@@ -103,7 +103,7 @@ runcmd:
   - systemctl enable ntp
   - timedatectl set-ntp 1
   # "onLogin"
-  - 'cp "boot/onLogin.sh" "/etc/profile.d"'
+ # - 'cp "boot/onLogin.sh" "/etc/profile.d"'
   # set up users
   - 'boot/bin/setup_user.sh "lucy" "pirate" --del-init-user'
   - 'boot/bin/setup_user.sh "Giang"'
