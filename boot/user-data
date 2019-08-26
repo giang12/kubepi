@@ -30,7 +30,7 @@ locale: "en_US.UTF-8"
 # # Set the timezone
 # # Value of 'timezone' must exist in /usr/share/zoneinfo
 # timezone: "America/Los_Angeles"
-timezone: UTC
+timezone: "UTC"
 
 # # Update apt packages on first boot
 package_update: true
@@ -96,14 +96,14 @@ runcmd:
   # Pickup the hostname changes
   - 'systemctl restart avahi-daemon'
   # # Activate WiFi interface
-  - 'ifup wlan0'
+  #- 'ifup wlan0'
   # datetime
-  - timedatectl set-timezone UTC
-  - apt install -y ntp
-  - systemctl enable ntp
-  - timedatectl set-ntp 1
+  #- timedatectl set-timezone UTC
+  #- apt install -y ntp
+  #- systemctl enable ntp
+  #- timedatectl set-ntp 1
   # "onLogin"
- # - 'cp "boot/onLogin.sh" "/etc/profile.d"'
+  # - 'cp "boot/onLogin.sh" "/etc/profile.d"'
   # set up users
   - 'boot/bin/setup_user.sh "lucy" "pirate" --del-init-user'
   - 'boot/bin/setup_user.sh "Giang"'
