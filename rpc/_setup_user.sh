@@ -41,7 +41,7 @@ ssh $init_user@$address << EOF
   sudo wget https://github.com/$GITHUB_USER.keys -O /home/$user/.ssh/authorized_keys
   sudo chown $user:$user /home/$user/.ssh/authorized_keys
 
-  echo "*/10 * * * * /usr/bin/wget https://github.com/$GITHUB_USER.keys -O ~/.ssh/authorized_keys" >> /tmp/cronjobs
+  echo "0 0 * * * /usr/bin/wget https://github.com/$GITHUB_USER.keys -O ~/.ssh/authorized_keys" >> /tmp/cronjobs
   sudo crontab -u $user /tmp/cronjobs
 
   sudo sh -c 'echo "$user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/010_$user-nopasswd'
