@@ -61,8 +61,10 @@ write_files:
       # static ip6_address=fd51:42f8:caae:d92e::ff/64
       static routers=192.168.11.1
       static domain_name_servers=192.168.11.11 192.168.11.100
-
+      static domain_search=12.dev
+      static domain_name=12.dev
     path: /etc/dhcpcd.conf
+    
   - content: |
       auto wlan0
       allow-hotplug wlan0

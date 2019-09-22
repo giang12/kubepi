@@ -1,4 +1,7 @@
 #!/bin/bash
+set -e
+set -o
+set -x
 
 # flashing the img
 HOSTNAME=$1
